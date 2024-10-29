@@ -7,7 +7,7 @@
 We start by accepting an input string of code, and we're gonna set up two
 */
 
-//======================= THE TOKENIZER!======================
+//======================= THE TOKENIZER!===============================
 function tokenizer(input) {
   let current = 0;
   let tokens = [];
@@ -96,4 +96,73 @@ function tokenizer(input) {
 }
 
 //======================= THE PARSER!======================
-function parser(tokens) {}
+function parser(tokens) {
+  let current = 0;
+
+  function walk() {
+    let token = tokens[current];
+
+    if (token.type === "number") {
+      current++;
+      return {
+        type: "NumberLiteral",
+        value: token.value,
+      };
+    }
+
+    if (token.type === "string") {
+      current++;
+      return {
+        type: "StringLiteral",
+        value: token.value,
+      };
+    }
+
+    //if it encounters opening parenthesis, it starts a CallExpression.
+    if (token.type === "paren" && token.value === "(") {
+      token = tokens[++current];
+
+      let node = {
+        type: "CallExpression",
+        name: token.value,
+        params: [],
+      };
+
+      // We increment `current` *again* to skip the name token.
+      token = tokens[++current];
+
+      while (
+        token.type !== "paren" ||
+        (token.type === "paren" && token.value !== ")")
+      ) {
+        // Here comes RECURSION into the Picture
+        // while loop continues until it finds a closing parenthesis, resusively calling walk() to process each parameter and add it to the params array.
+        node.params.push(walk());
+        token = tokens[current];
+      }
+
+      // Finally we will increment `current` one last time to skip the closing
+      // parenthesis.
+      current++;
+
+      return node;
+    }
+    // Again, if we haven't recognized the token type by now we're going to
+    // throw an error.
+    throw new TypeError(token.type);
+  }
+
+  // Now, we're going to create our AST which will have a root which is a
+  // `Program` node.
+
+  let ast = {
+    type: "Program",
+    body: [],
+  };
+
+  while (current < tokens.length) {
+    ast.body.push(walk());
+  }
+
+  return ast;
+}
