@@ -166,3 +166,5 @@ function parser(tokens) {
 
   return ast;
 }
+// ===============================The Traverser===============================
+// Now we will traverse our AST using visitor pattern.
