@@ -1,12 +1,13 @@
 /*We're just going to take our string of code and break it down into an array
- * of tokens.
- *
- *   (add 2 (subtract 4 2))   =>   [{ type: 'paren', value: '(' }, ...]
- 
+* of tokens.
+*
+*   (add 2 (subtract 4 2))   =>   [{ type: 'paren', value: '(' }, ...]
+
 
 We start by accepting an input string of code, and we're gonna set up two
 */
-
+// import { ReadLine } from "readline";
+const readline = require("readline");
 //======================= THE TOKENIZER!===============================
 function tokenizer(input) {
   let current = 0;
@@ -206,6 +207,7 @@ function traverser(ast, visitor) {
 
   traverseNode(ast, null);
 }
+
 //===================Transformer===============================
 function transformer(ast) {
   let newAst = {
@@ -244,7 +246,6 @@ function transformer(ast) {
           },
           arguments: [],
         };
-
         // Next we're going to define a new context on the original
         // `CallExpression` node that will reference the `expression`'s arguments
         // so that we can push arguments.
@@ -264,3 +265,66 @@ function transformer(ast) {
 
   return newAst;
 }
+
+// ========================  THE CODE GENERATOR!!!!==================
+function codeGenerator(node) {
+  switch (node.type) {
+    case "Program":
+      return node.body.map(codeGenerator).join("\n");
+
+    case "ExpressionStatement":
+      return codeGenerator(node.expression) + ";";
+
+    case "CallExpression":
+      return (
+        codeGenerator(node.callee) +
+        "(" +
+        node.arguments.map(codeGenerator).join(", ") +
+        ")"
+      );
+
+    case "Identifier":
+      return node.name;
+
+    case "NumberLiteral":
+      return node.value;
+
+    case "StringLiteral":
+      return '"' + node.value + '"';
+
+    default:
+      throw new TypeError(node.type);
+  }
+}
+
+// =======================Calling the functions=================
+/**
+ * FINALLY! We'll create our `compiler` function. Here we will link together
+ * every part of the pipeline.
+ *
+ *   1. input  => tokenizer   => tokens
+ *   2. tokens => parser      => ast
+ *   3. ast    => transformer => newAst
+ *   4. newAst => generator   => output
+ */
+function compiler(input) {
+  let tokens = tokenizer(input);
+  let ast = parser(tokens);
+  let newAst = transformer(ast);
+  let output = codeGenerator(newAst);
+
+  return output;
+}
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+rl.question("Enter LISP Code ", (code) => {
+  console.log(`You entered, ${code}!`);
+  let codes = code.toString();
+  console.log(compiler(codes));
+
+  rl.close();
+});
